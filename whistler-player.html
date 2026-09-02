@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>The Whistler Player</title>
+  <style>
+    :root { color-scheme: dark; font-family: system-ui, sans-serif; }
+    body { margin: 0; background: #15120e; color: #f6ead5; }
+    main { width: min(760px, calc(100% - 32px)); margin: 32px auto; }
+    h1 { margin-bottom: 6px; }
+    .subtle { color: #bcae98; margin-top: 0; }
+    .player { position: sticky; top: 0; z-index: 2; background: #292117; border: 1px solid #58462e; border-radius: 14px; padding: 18px; box-shadow: 0 12px 30px #0008; }
+    #nowPlaying { min-height: 1.5em; font-weight: 700; }
+    audio { width: 100%; margin: 12px 0; }
+    .controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    button { border: 1px solid #8a6b42; background: #4a3823; color: #fff5e5; border-radius: 8px; padding: 9px 13px; cursor: pointer; }
+    button:hover { background: #674c2c; }
+    label { margin-left: auto; }
+    ol { padding-left: 0; list-style: none; }
+    li { border-bottom: 1px solid #372c20; }
+    .episode { width: 100%; border: 0; border-radius: 0; background: transparent; text-align: left; padding: 12px; }
+    .episode:hover, .episode.active { background: #30261a; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>The Whistler</h1>
+    <p class="subtle">Choose an episode and the next one will start automatically.</p>
+
+    <section class="player" aria-label="Audio player">
+      <div id="nowPlaying">Select an episode</div>
+      <audio id="audio" controls preload="metadata"></audio>
+      <div class="controls">
+        <button id="previous" type="button">Previous</button>
+        <button id="next" type="button">Next</button>
+        <label><input id="shuffle" type="checkbox"> Shuffle</label>
+        <label><input id="autoNext" type="checkbox" checked> Play next automatically</label>
+      </div>
+    </section>
+
+    <ol id="episodeList"></ol>
+  </main>
+
+  <script>
+    const base = "https://www.oldradioworld.com/media/";
+    const files = [
+      "The Whistler The Whistler Part 22.mp3",
+      "The Whistler The Whistler Part 21.mp3",
+      "The Whistler The Whistler Part 20.mp3",
+      "The Whistler The Whistler Part 19.mp3",
+      "The Whistler The Whistler Part 18.mp3",
+      "The Whistler The Whistler Part 17.mp3",
+      "The Whistler The Whistler Part 16.mp3",
+      "The Whistler The Whistler Part 15.mp3",
+      "The Whistler The Whistler Part 14.mp3",
+      "The Whistler The Whistler Part 13.mp3",
+      "The Whistler The Whistler Part 12.mp3",
+      "The Whistler The Whistler Part 11.mp3",
+      "The Whistler The Whistler Part 10.mp3",
+      "The Whistler The Whistler Part 9.mp3",
+      "The Whistler The Whistler Part 8.mp3",
+      "The Whistler The Whistler Part 7.mp3",
+      "The Whistler The Whistler Part 6.mp3",
+      "The Whistler The Whistler Part 5.mp3",
+      "The Whistler The Whistler Part 4.mp3",
+      "The Whistler The Whistler Part 3.mp3",
+      "The Whistler Cover Up Part 2.mp3",
+      "The Whistler 1942-09-05 House Of Greed Part 01.mp3"
+    ];
+
+    const episodes = files.map((file) => ({
+      title: file.replace(/^The Whistler (?:\d{4}-\d{2}-\d{2} )?/, "").replace(/\.mp3$/, ""),
+      url: base + encodeURIComponent(file)
+    }));
+
+    const audio = document.querySelector("#audio");
+    const nowPlaying = document.querySelector("#nowPlaying");
+    const list = document.querySelector("#episodeList");
+    const shuffle = document.querySelector("#shuffle");
+    const autoNext = document.querySelector("#autoNext");
+    let currentIndex = -1;
+
+    function getNextIndex() {
+      if (!shuffle.checked || episodes.length < 2) return currentIndex < 0 ? 0 : currentIndex + 1;
+      let nextIndex;
+      do nextIndex = Math.floor(Math.random() * episodes.length);
+      while (nextIndex === currentIndex);
+      return nextIndex;
+    }
+
+    function loadEpisode(index, play = true) {
+      currentIndex = (index + episodes.length) % episodes.length;
+      const episode = episodes[currentIndex];
+      audio.src = episode.url;
+      nowPlaying.textContent = `${currentIndex + 1} of ${episodes.length}: ${episode.title}`;
+      document.querySelectorAll(".episode").forEach((button, i) => button.classList.toggle("active", i === currentIndex));
+      document.querySelector(".episode.active")?.scrollIntoView({ block: "nearest" });
+      if (play) audio.play().catch(() => {});
+    }
+
+    episodes.forEach((episode, index) => {
+      const item = document.createElement("li");
+      const button = document.createElement("button");
+      button.className = "episode";
+      button.type = "button";
+      button.textContent = `${index + 1}. ${episode.title}`;
+      button.addEventListener("click", () => loadEpisode(index));
+      item.append(button);
+      list.append(item);
+    });
+
+    document.querySelector("#previous").addEventListener("click", () => loadEpisode(currentIndex <= 0 ? episodes.length - 1 : currentIndex - 1));
+    document.querySelector("#next").addEventListener("click", () => loadEpisode(getNextIndex()));
+    audio.addEventListener("ended", () => {
+      if (autoNext.checked) loadEpisode(getNextIndex());
+    });
+  </script>
+</body>
+</html>
+

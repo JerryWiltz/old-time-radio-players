@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Superman Player</title>
+  <style>
+    :root { color-scheme: dark; font-family: system-ui, sans-serif; }
+    body { margin: 0; background: #15120e; color: #f6ead5; }
+    main { width: min(760px, calc(100% - 32px)); margin: 32px auto; }
+    h1 { margin-bottom: 6px; }
+    .subtle { color: #bcae98; margin-top: 0; }
+    .player { position: sticky; top: 0; z-index: 2; background: #292117; border: 1px solid #58462e; border-radius: 14px; padding: 18px; box-shadow: 0 12px 30px #0008; }
+    #nowPlaying { min-height: 1.5em; font-weight: 700; }
+    audio { width: 100%; margin: 12px 0; }
+    .controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    button { border: 1px solid #8a6b42; background: #4a3823; color: #fff5e5; border-radius: 8px; padding: 9px 13px; cursor: pointer; }
+    button:hover { background: #674c2c; }
+    label { margin-left: auto; }
+    ol { padding-left: 0; list-style: none; }
+    li { border-bottom: 1px solid #372c20; }
+    .episode { width: 100%; border: 0; border-radius: 0; background: transparent; text-align: left; padding: 12px; }
+    .episode:hover, .episode.active { background: #30261a; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Superman</h1>
+    <p class="subtle">Choose an episode and the next one will start automatically.</p>
+
+    <section class="player" aria-label="Audio player">
+      <div id="nowPlaying">Select an episode</div>
+      <audio id="audio" controls preload="metadata"></audio>
+      <div class="controls">
+        <button id="previous" type="button">Previous</button>
+        <button id="next" type="button">Next</button>
+        <label><input id="shuffle" type="checkbox"> Shuffle</label>
+        <label><input id="autoNext" type="checkbox" checked> Play next automatically</label>
+      </div>
+    </section>
+
+    <ol id="episodeList"></ol>
+  </main>
+
+  <script>
+    const base = "https://www.oldradioworld.com/media/";
+    const files = [
+      "Superman 1940-02-12 The Baby From Krypton.mp3",
+      "Superman 1940-02-14 Clark Kent Reporter.mp3",
+      "Superman 1940-02-16 Kenos Landslide.mp3",
+      "Superman 1940-02-19 Kent Captured By Seeking Keno.mp3",
+      "Superman 1940-02-21 Locomotive Crew Freed.mp3",
+      "Superman 1940-02-23 The Silver Clipper.mp3",
+      "Superman 1940-02-28 Yellow Mask Steals Fuel For Atomic Beam.mp3",
+      "Superman 1940-03-01 Threat to the Plane.mp3",
+      "Superman 1940-03-04 Fire in the Sterling Building.mp3",
+      "Superman 1940-03-06 The Stabbing Of June Anderson.mp3",
+      "Superman 1940-03-08 The North Star Mining Company.mp3",
+      "Superman 1940-03-11 The Steamship.mp3",
+      "Superman 1940-03-13 The Plane To Canyon City.mp3",
+      "Superman 1940-03-15 Left To Be Killed.mp3",
+      "Superman 1940-03-18 The Prison Riot.mp3",
+      "Superman 1940-03-20 The Steam Plant.mp3",
+      "Superman 1940-03-22 Mystery of Dyerville.mp3",
+      "Superman 1940-03-25 Mystery of Dyerville.mp3",
+      "Superman 1940-03-27 Mystery of Dyerville.mp3",
+      "Superman 1940-03-29 Mystery of Dyerville.mp3",
+      "Superman 1940-04-01 The Emerald Of The Incas.mp3",
+      "Superman 1940-04-03 The Emerald Of The Incas.mp3",
+      "Superman 1940-04-05 The Emerald Of The Incas.mp3",
+      "Superman 1940-04-08 The Emerald Of The Incas.mp3",
+      "Superman 1940-04-10 The Emerald Of The Incas.mp3",
+      "Superman 1940-04-12 The Emerald Of The Incas.mp3",
+      "Superman 1944-04-10 The Golden Homing Pigeon.mp3",
+      "Superman 1944-09-14 Der Teufels Atomic Energy Gun.mp3",
+      "Superman 1945-01-29 The Sleeping Beauty.mp3",
+      "Superman 1945-01-31 The Sleeping Beauty.mp3",
+      "Superman 1945-02-01 The Sleeping Beauty.mp3",
+      "Superman 1945-02-05 The Sleeping Beauty.mp3",
+      "Superman 1945-02-06 The Sleeping Beauty.mp3",
+      "Superman 1945-02-07 The Sleeping Beauty.mp3",
+      "Superman 1945-02-08 The Sleeping Beauty.mp3",
+      "Superman 1945-03-01 Mystery Of The Waxmen.mp3",
+      "Superman 1945-03-02 Mystery Of The Waxmen.mp3",
+      "Superman 1945-03-20 Mystery of the Golden Nail.mp3",
+      "Superman 1945-03-21 Mystery of the Golden Nail.mp3",
+      "Superman 1945-03-27 Mystery of the Golden Nail.mp3",
+      "Superman 1945-04-18 The Boy King Of Morania.mp3",
+      "Superman 1945-04-24 The Boy King Of Morania.mp3",
+      "Superman 1945-05-08 Lair Of The Dragon.mp3",
+      "Superman 1949-03-09 The Case of the Double Trouble.mp3",
+      "Superman 1949-10-29 The Mystery Of The Walking Dead.mp3",
+      "Superman 1949-11-19 One Minute To Death.mp3",
+      "Superman 1949-11-26 Puzzle Of The Poison.mp3",
+      "Superman 1949-12-10 Mystery Of The Mechanical Monster.mp3",
+      "Superman 1949-12-31 Mystery Of The Little Men.mp3",
+      "Superman 1950-01-07 The Ghost Of Billy Baker.mp3",
+      "Superman 1950-01-21 Dead Men Tell No Tales.mp3",
+      "Superman 1950-11-23 The Story Of Marina Baum.mp3",
+      "Superman 1941-01-15 The Black Pearl Of Osyrus - Part 1.mp3",
+      "Superman 1941-01-17 The Black Pearl Of Osyrus - Part 2.mp3",
+      "Superman 1941-01-20 The Black Pearl Of Osyrus - Part 3.mp3",
+      "Superman 1941-01-22 The Black Pearl Of Osyrus - Part 4.mp3",
+      "Superman 1941-01-24 The Black Pearl Of Osyrus - Part 5.mp3",
+      "Superman 1941-01-27 The Black Pearl Of Osyrus - Part 6.mp3",
+      "Superman 1941-01-29 The Black Pearl Of Osyrus - Part 7.mp3",
+      "Superman 1941-01-31 The Black Pearl Of Osyrus - Part 8.mp3",
+      "Superman 1941-02-03 The Black Pearl Of Osyrus - Part 9.mp3",
+      "Superman 1941-02-05 The Black Pearl Of Osyrus - Part 10.mp3",
+      "Superman 1941-02-07 The Black Pearl Of Osyrus - Part 11.mp3"
+    ];
+
+    const episodes = files.map((file) => ({
+      title: file.replace(/^Superman \d{4}-\d{2}-\d{2} /, "").replace(/\.mp3$/, ""),
+      url: base + encodeURIComponent(file)
+    }));
+
+    const audio = document.querySelector("#audio");
+    const nowPlaying = document.querySelector("#nowPlaying");
+    const list = document.querySelector("#episodeList");
+    const shuffle = document.querySelector("#shuffle");
+    const autoNext = document.querySelector("#autoNext");
+    let currentIndex = -1;
+
+    function getNextIndex() {
+      if (!shuffle.checked || episodes.length < 2) return currentIndex < 0 ? 0 : currentIndex + 1;
+      let nextIndex;
+      do nextIndex = Math.floor(Math.random() * episodes.length);
+      while (nextIndex === currentIndex);
+      return nextIndex;
+    }
+
+    function loadEpisode(index, play = true) {
+      currentIndex = (index + episodes.length) % episodes.length;
+      const episode = episodes[currentIndex];
+      audio.src = episode.url;
+      nowPlaying.textContent = `${currentIndex + 1} of ${episodes.length}: ${episode.title}`;
+      document.querySelectorAll(".episode").forEach((button, i) => button.classList.toggle("active", i === currentIndex));
+      document.querySelector(".episode.active")?.scrollIntoView({ block: "nearest" });
+      if (play) audio.play().catch(() => {});
+    }
+
+    episodes.forEach((episode, index) => {
+      const item = document.createElement("li");
+      const button = document.createElement("button");
+      button.className = "episode";
+      button.type = "button";
+      button.textContent = `${index + 1}. ${episode.title}`;
+      button.addEventListener("click", () => loadEpisode(index));
+      item.append(button);
+      list.append(item);
+    });
+
+    document.querySelector("#previous").addEventListener("click", () => loadEpisode(currentIndex <= 0 ? episodes.length - 1 : currentIndex - 1));
+    document.querySelector("#next").addEventListener("click", () => loadEpisode(getNextIndex()));
+    audio.addEventListener("ended", () => {
+      if (autoNext.checked) loadEpisode(getNextIndex());
+    });
+  </script>
+</body>
+</html>

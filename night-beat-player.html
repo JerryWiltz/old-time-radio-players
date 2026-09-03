@@ -59,7 +59,7 @@
       "NB 1950-04-17 (0011) Tong War.mp3",
       "NB 1950-05-01 (0013) Mentallo, the Mental Marvel.mp3",
       "NB 1950-05-08 (0014) Elevator Caper.mp3",
-      "NB 1950-05-15 (0015) The Night Watchman.mp3",
+      "NB 1950-05-15 (0015) The Night Watchman.ogg",
       "NB 1950-05-22 (0016) I Wish You Were Dead.mp3",
       "NB 1950-05-29 (0017) Harlan Matthews, Stamp Dealer.mp3",
       "NB 1950-06-05 (0018) The Girl from Kansas.mp3",
@@ -68,7 +68,7 @@
       "NB 1950-06-26 (0021) The Juvenile Gangster.mp3",
       "NB 1950-07-03 (0022) Marty.mp3",
       "NB 1950-07-10 (0023) Twill Be the Death of Me.mp3",
-      "NB 1950-07-17 (0024) Molly Keller.mp3",
+      "NB 1950-07-17 (0024) Molly Keller.ogg",
       "NB 1950-07-24 (0025) The Devil%27s Bible.mp3",
       "NB 1950-07-31 (0026) City at Your Fingertips.mp3",
       "NB 1950-08-07 (0027) Old Blind Pop.mp3",
@@ -85,7 +85,7 @@
       "NB 1950-11-03 (0039) The Black Cat.mp3",
       "NB 1950-11-10 (0040) The Slasher.mp3",
       "NB 1951-03-04 (0041) Big John McMasters.mp3",
-      "NB 1951-05-18 (0042) Juke Box Romance aka Juke Box Julie.mp3",
+      "NB 1951-05-18 (0042) Juke Box Romance aka Juke Box Julie.ogg",
       "NB 1951-05-25 (0043) Fear.mp3",
       "NB 1951-06-01 (0044) Will of Mrs Orloff.mp3",
       "NB 1951-06-08 (0045) The Search for Fred aka A Hot Night In June.mp3",
@@ -105,7 +105,7 @@
       "NB 1952-05-15 (0094) Death of Riley.mp3",
       "NB 1952-05-22 (0095) Target for a Week.mp3",
       "NB 1952-05-29 (0096) The Jockey Brothers.mp3",
-      "NB 1952-06-05 (0097) Marvelous Machine.mp3",
+      "NB 1952-06-05 (0097) Marvelous Machine.ogg",
       "NB 1952-06-19 (0098) Railroaded.mp3",
       "NB 1952-06-26 (0099) Reformer.Mp3",
       "NB 1952-07-03 (0100) The Old Itch aka Stone%27s Love Affair.mp3",
@@ -122,7 +122,7 @@
     ];
 
     const episodes = files.map((file) => ({
-      title: file.replace(/^NB /, "").replace(/\.mp3$/i, "").replaceAll("%27", "'"),
+      title: file.replace(/^NB /, "").replace(/\.(?:mp3|ogg)$/i, "").replaceAll("%27", "'"),
       url: base + encodeURIComponent(file).replace(/[!'()*]/g, (character) => `%${character.charCodeAt(0).toString(16).toUpperCase()}`)
     }));
 
@@ -170,4 +170,3 @@
   </script>
 </body>
 </html>
-

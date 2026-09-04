@@ -286,9 +286,14 @@
       "The Shadow 1954-06-27 (737) The Vengeance of Angela Nolan.mp3"
     ];
 
+    const alternateUrls = new Map([
+      ["The Shadow 1947-10-26 (419) Death Hunt.mp3", "https://archive.org/download/the-shadow-radio-show-1937-1954-old-time-radio-all-available-episodes/1947-10-26%20-%20The%20Death%20Hunt.mp3"],
+      ["The Shadow 1948-05-02 (446) The Legend of the Living Swamp.mp3", "https://archive.org/download/TheShadow19480502LegendOfTheLivingSwamp/The%20Shadow%201948-05-02%20Legend%20of%20the%20Living%20Swamp.ogg"]
+    ]);
+
     const episodes = files.map((file) => ({
       title: file.replace(/^The Shadow /, "").replace(/\.mp3$/i, ""),
-      url: base + encodeURIComponent(file).replace(/[!'()*]/g, (character) => `%${character.charCodeAt(0).toString(16).toUpperCase()}`)
+      url: alternateUrls.get(file) || base + encodeURIComponent(file).replace(/[!'()*]/g, (character) => `%${character.charCodeAt(0).toString(16).toUpperCase()}`)
     }));
 
     const audio = document.querySelector("#audio");
@@ -335,5 +340,4 @@
   </script>
 </body>
 </html>
-
 

@@ -44,7 +44,7 @@
 
   <script>
     const base = "https://archive.org/download/NightBeataccurate/";
-    const files = [
+    const originalFiles = [
       "NB 1949-05-19 The Ted Carter Murder Case(Audition).mp3",
       "NB 1950-01-13 The Elevator Caper (Audition).mp3",
       "NB 1950-02-06 (0001) Zero.mp3",
@@ -104,8 +104,8 @@
       "NB 1952-05-08 (0093) Long Live the Clown.mp3",
       "NB 1952-05-15 (0094) Death of Riley.mp3",
       "NB 1952-05-22 (0095) Target for a Week.mp3",
-      "NB 1952-05-29 (0096) The Jockey Brothers.mp3",
-      "NB 1952-06-05 (0097) Marvelous Machine.ogg",
+      "NB 1952-05-29 (0096) The Jockey Brothers.ogg",
+      "NB 1952-06-05 (0097) Marvelous Machine.mp3",
       "NB 1952-06-19 (0098) Railroaded.mp3",
       "NB 1952-06-26 (0099) Reformer.Mp3",
       "NB 1952-07-03 (0100) The Old Itch aka Stone%27s Love Affair.mp3",
@@ -121,11 +121,33 @@
       "NB 1953-11-05 (xxxx) A Search in the Night (TV.mp3"
     ];
 
-    const episodes = files.map((file) => ({
-      title: file.replace(/^NB /, "").replace(/\.(?:mp3|ogg)$/i, "").replaceAll("%27", "'"),
-      url: base + encodeURIComponent(file).replace(/[!'()*]/g, (character) => `%${character.charCodeAt(0).toString(16).toUpperCase()}`)
-    }));
+    const archiveFiles = [
+      "Night_Beat_50_04_09_xxxx_The_Night_Is_A_Weapon_Special_Rebroadcast.mp3",
+      "Night_Beat_50_04_16_xxxx_World_Of_His_Own_Special_Rebroadcast_Certified_but_is_it.mp3",
+      "Night_Beat_50_04_23_xxxx_Girl_In_The_Park_Special_ReBroadcast.mp3",
+      "Night_Beat_50_04_30_xxxx_Am_I_My_Brothers_Keeper_Special_Rebroadcast.mp3",
+      "Night_Beat_51_07_20_0051_The_City_At_Your_Fingertips.mp3"
+    ];
+    const files = [...originalFiles, ...archiveFiles];
 
+    const alternateUrls = new Map([
+      ["Night_Beat_50_04_09_xxxx_The_Night_Is_A_Weapon_Special_Rebroadcast.mp3","https://archive.org/download/Nightbeat_otr/500409_The_Night_is_a_Weapon_special_rebroadcast.mp3"],
+      ["Night_Beat_50_04_16_xxxx_World_Of_His_Own_Special_Rebroadcast_Certified_but_is_it.mp3","https://archive.org/download/NightBeat/Night_Beat_50_04_16_xxxx_World_Of_His_Own_Special_Rebroadcast_Certified_but_is_it.mp3"],
+      ["Night_Beat_50_04_23_xxxx_Girl_In_The_Park_Special_ReBroadcast.mp3","https://archive.org/download/Nightbeat_otr/500423_The_Girl_in_the_Park.mp3"],
+      ["Night_Beat_50_04_30_xxxx_Am_I_My_Brothers_Keeper_Special_Rebroadcast.mp3","https://archive.org/download/NightBeat/Night_Beat_50_04_30_xxxx_Am_I_My_Brothers_Keeper_Special_Rebroadcast.mp3"],
+      ["Night_Beat_51_07_20_0051_The_City_At_Your_Fingertips.mp3","https://archive.org/download/NightBeat/Night_Beat_51_07_20_0051_The_City_At_Your_Fingertips.mp3"]
+    ]);
+
+    function formatTitle(file) {
+      const archiveMatch = file.match(/^Night_Beat_(\d{2})_(\d{2})_(\d{2})_[^_]+_(.+)\.mp3$/i);
+      if (archiveMatch) return `19${archiveMatch[1]}-${archiveMatch[2]}-${archiveMatch[3]} ${archiveMatch[4].replaceAll("_", " ")}`;
+      return file.replace(/^NB /, "").replace(/\.(?:mp3|ogg)$/i, "").replaceAll("%27", "'");
+    }
+
+    const episodes = files.map((file) => ({
+      title: formatTitle(file),
+      url: alternateUrls.get(file) || base + encodeURIComponent(file).replace(/[!'()*]/g, (character) => `%${character.charCodeAt(0).toString(16).toUpperCase()}`)
+    }));
     const audio = document.querySelector("#audio");
     const nowPlaying = document.querySelector("#nowPlaying");
     const list = document.querySelector("#episodeList");

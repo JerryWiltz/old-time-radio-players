@@ -44,7 +44,8 @@
 
   <script>
     const base = "https://archive.org/download/The_Roy_Rogers_Show/";
-    const files = [
+    const archiveBase = "https://archive.org/download/OTRR_Roy_Rogers_Singles/";
+    const originalFiles = [
       "Audition_bloopers_and_false_starts_Roy_Rogers.mp3",
       "Roy_Rogers_000000_0000000.mp3",
       "Roy_Rogers_000000_New_River_Rodeo.mp3",
@@ -125,10 +126,47 @@
       "The_Roy_Rogers_Show_xx_xx_xx_The_Upside_Down_Liberty_Stamp.mp3"
     ];
 
+    const archiveFiles = [
+      "Roy Rogers  45-04-03 (020) The Story of Joaquin Murietta.mp3",
+      "Roy Rogers  49-06-26 (044) The Mystery of Squatter's Island.mp3",
+      "Roy Rogers  49-07-17 (047) The Mysterious Loot at Bad Luck Cave.mp3",
+      "Roy Rogers  49-07-24 (048) The Disappearing Trail Mystery.mp3",
+      "Roy Rogers  4x-xx-xx (xxxx) The Russian Kid.mp3",
+      "Roy Rogers  51-10-05 (001) Crooked Politicians.mp3",
+      "Roy Rogers  51-xx-xx (xxxx) Constable Jerry Stewler (AFRS).mp3",
+      "Roy Rogers  54-01-28 (0001) Song - Blue Shadows on the Trail (AFRTS).mp3",
+      "Roy Rogers  54-03-04 (0007) Song - The Streets of Laredo.mp3",
+      "Roy Rogers  54-04-15 (0012) Song - That Strawberry Roan.mp3",
+      "Roy Rogers  54-05-06 (0015) Song - Old Man River.mp3",
+      "Roy Rogers  54-05-20 (0017) Song - Stampede (AFRTS).mp3",
+      "Roy Rogers  54-07-01 (0023) Song - Y'all Come.mp3",
+      "Roy Rogers  54-07-08 (0024) Song - The Spell of Indian Magic.mp3",
+      "Roy Rogers  54-07-15 (0025) Song - My Little Buckaroo.mp3",
+      "Roy Rogers  54-07-22 (0026) Song - The River of No Return.mp3",
+      "Roy Rogers  54-10-07 (0037) Song - Hawaiian Medley (AFRTS).mp3",
+      "Roy Rogers  54-11-18 (0043) Song - That's America to Me (AFRTS).mp3",
+      "Roy Rogers  54-12-30 (0049) Song - This Old House.mp3",
+      "Roy Rogers  54-xx-xx (xxxx) Song - Red River Valley (AFRTS).mp3",
+      "Roy Rogers  55-01-20 (0052) Song - Beyond the Blue Horizon (AFRTS).mp3",
+      "Roy Rogers  55-01-27 (0053) Song - Faraway Places (AFRTS).mp3",
+      "Roy Rogers  55-05-19 Trigger is Stolen 1st song- Zip-a-Dee-Doo-Dah (AFRTS).mp3",
+      "Roy Rogers  55-05-26 Gold Mine in Jungle - Mr Dixon Kidnapped - Song - Golden Earrings.mp3",
+      "Roy Rogers  55-06-23 (0074) Song - Mexicali Rose (AFRTS).mp3",
+      "Roy Rogers  55-06-30 (0075) Song - Washington (AFRTS).mp3",
+      "Roy Rogers  55-07-07 (0076) Song - Good Day (AFRTS).mp3",
+      "Roy Rogers  55-07-14 (0077) Trip to Bishop, CA - Bill Bowers daughter Sue - Song-Sierra Sue.mp3",
+      "Roy Rogers  55-07-21 (0078) Song - Tornado (AFRTS).mp3"
+    ];
+    const files = [...originalFiles, ...archiveFiles];
+    const archiveFileSet = new Set(archiveFiles);
+
     function formatTitle(file) {
       return file
         .replace(/^The_Roy_Rogers_Show_xx_xx_xx_/, "Unknown date - ")
         .replace(/^Roy_Rogers_/, "")
+        .replace(/^Roy Rogers\s+/, "")
+        .replace(/^(\d{2})-(\d{2})-(\d{2}) /, "19$1-$2-$3 ")
+        .replace(/^([45]x)-xx-xx /, "$1-xx-xx ")
         .replace(/^([45]\d)(\d{2})(\d{2})_/, "19$1-$2-$3 ")
         .replace(/\.mp3$/i, "")
         .replaceAll("_", " ");
@@ -136,9 +174,8 @@
 
     const episodes = files.map((file) => ({
       title: formatTitle(file),
-      url: base + encodeURIComponent(file).replace(/[!'()*]/g, (character) => `%${character.charCodeAt(0).toString(16).toUpperCase()}`)
+      url: (archiveFileSet.has(file) ? archiveBase : base) + encodeURIComponent(file).replace(/[!'()*]/g, (character) => `%${character.charCodeAt(0).toString(16).toUpperCase()}`)
     }));
-
     const audio = document.querySelector("#audio");
     const nowPlaying = document.querySelector("#nowPlaying");
     const list = document.querySelector("#episodeList");
@@ -183,5 +220,4 @@
   </script>
 </body>
 </html>
-
 

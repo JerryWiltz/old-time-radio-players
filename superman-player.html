@@ -44,7 +44,8 @@
 
   <script>
     const base = "https://www.oldradioworld.com/media/";
-    const files = [
+    const archiveBase = "https://archive.org/download/superman_otr/";
+    const originalFiles = [
       "Superman 1940-02-12 The Baby From Krypton.mp3",
       "Superman 1940-02-14 Clark Kent Reporter.mp3",
       "Superman 1940-02-16 Kenos Landslide.mp3",
@@ -110,11 +111,161 @@
       "Superman 1941-02-07 The Black Pearl Of Osyrus - Part 11.mp3"
     ];
 
-    const episodes = files.map((file) => ({
-      title: file.replace(/^Superman \d{4}-\d{2}-\d{2} /, "").replace(/\.mp3$/, ""),
-      url: base + encodeURIComponent(file)
-    }));
+    const archiveFiles = [
+      "Superman_400226_07_The_Atomic_Beam_M.mp3",
+      "Superman_400415_28_Donellis_Protect.mp3",
+      "Superman_400417_29_Donellis_Protect.mp3",
+      "Superman_400419_30_Donellis_Protect.mp3",
+      "Superman_400422_31_Donellis_Protect.mp3",
+      "Superman_400424_32_Donellis_Protect.mp3",
+      "Superman_400426_33_Donellis_Protect.mp3",
+      "Superman_400429_34_Airplane_Disaster.mp3",
+      "Superman_400501_35_Airplane_Disaster.mp3",
+      "Superman_400503_36_Airplane_Disaster.mp3",
+      "Superman_400506_37_Airplane_Disaster.mp3",
+      "Superman_400508_38_Airplane_Disaster.mp3",
+      "Superman_400510_39_Airplane_Disaster.mp3",
+      "Superman_400513_40_Buffalo_Hills_1_o.mp3",
+      "Superman_400515_41_Buffalo_Hills_2_o.mp3",
+      "Superman_400517_42_Buffalo_Hills_3_o.mp3",
+      "Superman_400520_43_Buffalo_Hills_4_o.mp3",
+      "Superman_400522_44_Buffalo_Hills_5_o.mp3",
+      "Superman_400524_45_Buffalo_Hills_6_o.mp3",
+      "Superman_400527_46_Alonzo_Craig_Arti.mp3",
+      "Superman_400529_47_Alonzo_Craig_Arti.mp3",
+      "Superman_400601_48_Alonzo_Craig_Arti.mp3",
+      "Superman_400603_49_Alonzo_Craig_Arti.mp3",
+      "Superman_400605_50_Alonzo_Craig_Arti.mp3",
+      "Superman_400607_51_Alonzo_Craig_Arti.mp3",
+      "Superman_400609_52_Horace_Mortons_W.mp3",
+      "Superman_400611_53_Horace_Mortons_W.mp3",
+      "Superman_400613_54_Horace_Mortons_W.mp3",
+      "Superman_400615_55_Horace_Mortons_W.mp3",
+      "Superman_400619_56_Horace_Mortons_W.mp3",
+      "Superman_400621_57_Horace_Mortons_W.mp3",
+      "Superman_400624_58_Hans_Holbins_Dol.mp3",
+      "Superman_400626_59_Hans_Holbins_Dol.mp3",
+      "Superman_400628_60_Hans_Holbins_Dol.mp3",
+      "Superman_400701_61_Hans_Holbins_Dol.mp3",
+      "Superman_400703_62_Hans_Holbins_Dol.mp3",
+      "Superman_400705_63_Hans_Holbins_Dol.mp3",
+      "Superman_400708_Happyland_Amusement_.mp3",
+      "Superman_400710_Happyland_Amusement_.mp3",
+      "Superman_400712_Happyland_Amusement_.mp3",
+      "Superman_400715_Happyland_Amusement_.mp3",
+      "Superman_400717_Happyland_Amusement_.mp3",
+      "Superman_400719_Happyland_Amusement_.mp3",
+      "Superman_400722_Lighthouse_Point_Smu.mp3",
+      "Superman_400724_Lighthouse_Point_Smu.mp3",
+      "Superman_400726_Lighthouse_Point_Smu.mp3",
+      "Superman_400729_Lighthouse_Point_Smu.mp3",
+      "Superman_400731_Lighthouse_Point_Smu.mp3",
+      "Superman_400802_Lighthouse_Point_Smu.mp3",
+      "Superman_400805_Pillar_Of_Fire_At_Gr.mp3",
+      "Superman_400807_Pillar_Of_Fire_At_Gr.mp3",
+      "Superman_400809_Pillar_Of_Fire_At_Gr.mp3",
+      "Superman_400812_The_Mayan_Treasure_1.mp3",
+      "Superman_400814_The_Mayan_Treasure_2.mp3",
+      "Superman_400816_The_Mayan_Treasure_3.mp3",
+      "Superman_400819_The_Mayan_Treasure_4.mp3",
+      "Superman_400821_The_Mayan_Treasure_5.mp3",
+      "Superman_400823_The_Mayan_Treasure_6.mp3",
+      "Superman_400826_Professor_Thorpes_B.mp3",
+      "Superman_400828_Professor_Thorpes_B.mp3",
+      "Superman_400830_Professor_Thorpes_B.mp3",
+      "Superman_400902_Professor_Thorpes_B.mp3",
+      "Superman_400904_Professor_Thorpes_B.mp3",
+      "Superman_400906_Professor_Thorpes_B.mp3",
+      "Superman_400909_Professor_Thorpes_B.mp3",
+      "Superman_400911_Professor_Thorpes_B.mp3",
+      "Superman_400913_Professor_Thorpes_B.mp3",
+      "Superman_400916_Professor_Thorpes_B.mp3",
+      "Superman_400918_Professor_Thorpes_B.mp3",
+      "Superman_400920_Professor_Thorpes_B.mp3",
+      "Superman_400923_The_Curse_Of_Dead_Ma.mp3",
+      "Superman_400925_The_Curse_Of_Dead_Ma.mp3",
+      "Superman_400927_The_Curse_Of_Dead_Ma.mp3",
+      "Superman_400930_The_Curse_Of_Dead_Ma.mp3",
+      "Superman_401002_The_Curse_Of_Dead_Ma.mp3",
+      "Superman_401004_The_Curse_Of_Dead_Ma.mp3",
+      "Superman_401007_Yellow_Mask_And_The_.mp3",
+      "Superman_401009_Yellow_Mask_And_The_.mp3",
+      "Superman_401011_Yellow_Mask_And_The_.mp3",
+      "Superman_401014_Yellow_Mask_And_The_.mp3",
+      "Superman_401016_Yellow_Mask_And_The_.mp3",
+      "Superman_401018_Yellow_Mask_And_The_.mp3",
+      "Superman_401021_Yellow_Mask_And_The_.mp3",
+      "Superman_401023_Yellow_Mask_And_The_.mp3",
+      "Superman_401025_Yellow_Mask_And_The_.mp3",
+      "Superman_401028_Yellow_Mask_And_The_.mp3",
+      "Superman_401030_Yellow_Mask_And_The_.mp3",
+      "Superman_401101_Yellow_Mask_And_The_.mp3",
+      "Superman_401104_Yellow_Mask_And_The_.mp3",
+      "Superman_401106_Yellow_Mask_And_The_.mp3",
+      "Superman_401108_Yellow_Mask_And_The_.mp3",
+      "Superman_401111_The_Invisible_Man_1_.mp3",
+      "Superman_401113_The_Invisible_Man_2_.mp3",
+      "Superman_401115_The_Invisible_Man_3_.mp3",
+      "Superman_401118_The_Invisible_Man_4_.mp3",
+      "Superman_401120_The_Invisible_Man_5_.mp3",
+      "Superman_401122_The_Invisible_Man_6_.mp3",
+      "Superman_401125_The_5_Million_Gold_H.mp3",
+      "Superman_401127_The_5_Million_Gold_H.mp3",
+      "Superman_401129_The_5_Million_Gold_H.mp3",
+      "Superman_401202_The_5_Million_Gold_H.mp3",
+      "Superman_401204_The_5_Million_Gold_H.mp3",
+      "Superman_401206_The_5_Million_Gold_H.mp3",
+      "Superman_401209_The_5_Million_Gold_H.mp3",
+      "Superman_401211_The_5_Million_Gold_H.mp3",
+      "Superman_401213_The_Howling_Coyote_0.mp3",
+      "Superman_401216_The_Howling_Coyote_0.mp3",
+      "Superman_401218_The_Howling_Coyote_0.mp3",
+      "Superman_401220_The_Howling_Coyote_0.mp3",
+      "Superman_401223_The_Howling_Coyote_0.mp3",
+      "Superman_401225_The_Howling_Coyote_0.mp3",
+      "Superman_401227_The_Howling_Coyote_0.mp3",
+      "Superman_401230_The_Howling_Coyote_0.mp3",
+      "Superman_410101_The_Howling_Coyote_0.mp3",
+      "Superman_410103_The_Howling_Coyote_1.mp3",
+      "Superman_410106_The_Howling_Coyote_1.mp3",
+      "Superman_410108_The_Howling_Coyote_1.mp3",
+      "Superman_410110_The_Howling_Coyote_1.mp3",
+      "Superman_410113_The_Howling_Coyote_1.mp3",
+      "Superman_410210_The_Dragons_Teeth_0.mp3",
+      "Superman_410212_The_Dragons_Teeth_0.mp3",
+      "Superman_410214_The_Dragons_Teeth_0.mp3",
+      "Superman_410217_The_Dragons_Teeth_0.mp3",
+      "Superman_410219_The_Dragons_Teeth_0.mp3",
+      "Superman_410221_The_Dragons_Teeth_0.mp3",
+      "Superman_410224_The_Dragons_Teeth_0.mp3",
+      "Superman_410226_The_Dragons_Teeth_0.mp3",
+      "Superman_410228_The_Dragons_Teeth_0.mp3",
+      "Superman_410303_The_Dragons_Teeth_1.mp3",
+      "Superman_410305_Last_Of_The_Clipper_.mp3",
+      "Superman_410307_Last_Of_The_Clipper_.mp3",
+      "Superman_410310_Last_Of_The_Clipper_.mp3",
+      "Superman_410312_Last_Of_The_Clipper_.mp3",
+      "Superman_410314_Last_Of_The_Clipper_.mp3",
+      "Superman_410317_Last_Of_The_Clipper_.mp3"
+    ];
+    const files = [...originalFiles, ...archiveFiles];
+    const archiveFileSet = new Set(archiveFiles);
 
+    const alternateUrls = new Map([
+      ["Superman_401122_The_Invisible_Man_6_.mp3","https://archive.org/download/TheAdventuresOfSuperman_201805/1940-11-22%20-%200123%29%20The%20Invisible%20Man%20-%20Pt%2006.ogg"],
+      ["Superman_401125_The_5_Million_Gold_H.mp3","https://archive.org/download/TheAdventuresOfSuperman_201805/1940-11-25%20-%200124%29%20The%20%245%20Million%20Gold%20Heist%20-%20Pt%2001.ogg"]
+    ]);
+
+    function formatTitle(file) {
+      const archiveMatch = file.match(/^Superman_(\d{2})(\d{2})(\d{2})_(?:\d+_)?(.+)\.mp3$/i);
+      if (archiveMatch) return `19${archiveMatch[1]}-${archiveMatch[2]}-${archiveMatch[3]} ${archiveMatch[4].replaceAll("_", " ")}`;
+      return file.replace(/^Superman \d{4}-\d{2}-\d{2} /, "").replace(/\.mp3$/i, "");
+    }
+
+    const episodes = files.map((file) => ({
+      title: formatTitle(file),
+      url: alternateUrls.get(file) || (archiveFileSet.has(file) ? archiveBase : base) + encodeURIComponent(file).replace(/[!'()*]/g, (character) => `%${character.charCodeAt(0).toString(16).toUpperCase()}`)
+    }));
     const audio = document.querySelector("#audio");
     const nowPlaying = document.querySelector("#nowPlaying");
     const list = document.querySelector("#episodeList");

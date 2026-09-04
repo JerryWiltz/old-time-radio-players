@@ -44,7 +44,7 @@
 
   <script>
     const base = "https://www.oldradioworld.com/media/";
-    const files = [
+    const originalFiles = [
       "Tales Of The Texas Rangers 1950-07-15 The White Elephant.mp3",
       "Tales Of The Texas Rangers 1950-07-22 Apache Peak.mp3",
       "Tales Of The Texas Rangers 1950-07-29 The Trigger Man.mp3",
@@ -135,14 +135,46 @@
       "Texas_Rangers_1952_09_14_95_Drive_In.mp3"
     ];
 
-    const episodes = files.map((file) => {
-      const oldStyle = file.startsWith("Tales Of");
-      const title = oldStyle
-        ? file.replace(/^Tales Of The Texas Rangers \d{4}-\d{2}-\d{2} /, "").replace(/\.mp3$/, "")
-        : file.replace(/^Texas_Rangers_\d{4}_\d{2}_\d{2}_/, "").replace(/\.mp3$/, "").replaceAll("_", " ");
-      return { title, url: base + encodeURIComponent(file) };
-    });
+    const archiveFiles = [
+      "Tales of the Texas Rangers 1951-10-14 (48) Play for Keeps.mp3",
+      "Tales of the Texas Rangers 1951-10-28 (50) The White Elephant.mp3",
+      "Tales of the Texas Rangers 1951-11-11 (52) Open and Shut.mp3",
+      "Tales of the Texas Rangers 1951-12-02 (55) The Dead Give-Away.mp3"
+    ];
+    const files = [...originalFiles, ...archiveFiles];
 
+    const alternateUrls = new Map([
+      ["Texas_Rangers_1950_12_17_23_The_Cactus_Pear.mp3","https://archive.org/download/OTRR_Tales_of_the_Texas_Rangers_Single/Tales%20of%20the%20Texas%20Rangers%201950-12-17%20%2823%29%20The%20Cactus%20Pear.mp3"],
+      ["Texas_Rangers_1950_12_24_24_Christmas_Present.mp3","https://archive.org/download/OTRR_Tales_of_the_Texas_Rangers_Single/Tales%20of%20the%20Texas%20Rangers%201950-12-24%20%2824%29%20Christmas%20Present.mp3"],
+      ["Texas_Rangers_1951_05_20_44_Squaredance.mp3","https://archive.org/download/OTRR_Tales_of_the_Texas_Rangers_Single/Tales%20of%20the%20Texas%20Rangers%201951-05-20%20%2844%29%20Square%20Dance.mp3"],
+      ["Texas_Rangers_1951_12_09_56_Death_Plant.mp3","https://archive.org/download/OTRR_Tales_of_the_Texas_Rangers_Single/Tales%20of%20the%20Texas%20Rangers%201951-12-09%20%2856%29%20Death%20Plant.mp3"],
+      ["Texas_Rangers_1951_12_16_57_Pick_Up.mp3","https://archive.org/download/OTRR_Tales_of_the_Texas_Rangers_Single/Tales%20of%20the%20Texas%20Rangers%201951-12-16%20%2857%29%20Pick-Up.mp3"],
+      ["Texas_Rangers_1952_01_13_61_Clip_Job.mp3","https://archive.org/download/OTRR_Tales_of_the_Texas_Rangers_Single/Tales%20of%20the%20Texas%20Rangers%201952-01-13%20%2861%29%20Clip%20Job.mp3"],
+      ["Texas_Rangers_1952_01_20_62_Blood_Trail.mp3","https://archive.org/download/OTRR_Tales_of_the_Texas_Rangers_Single/Tales%20of%20the%20Texas%20Rangers%201952-01-20%20%2862%29%20Blood%20Trail.mp3"],
+      ["Texas_Rangers_1952_01_27_63_Night_Chase.mp3","https://archive.org/download/OTRR_Tales_of_the_Texas_Rangers_Single/Tales%20of%20the%20Texas%20Rangers%201952-01-27%20%2863%29%20Night%20Chase.mp3"],
+      ["Texas_Rangers_1952_02_17_66_Cold_Blood.mp3","https://archive.org/download/OTRR_Tales_of_the_Texas_Rangers_Single/Tales%20of%20the%20Texas%20Rangers%201952-02-17%20%2866%29%20Cold%20Blood.mp3"],
+      ["Texas_Rangers_1952_03_02_68_The_Ice_Man.mp3","https://archive.org/download/OTRR_Tales_of_the_Texas_Rangers_Single/Tales%20of%20the%20Texas%20Rangers%201952-03-02%20%2868%29%20The%20Ice%20Man.mp3"],
+      ["Texas_Rangers_1952_03_30_71_Nighthawk.mp3","https://archive.org/download/OTRR_Tales_of_the_Texas_Rangers_Single/Tales%20of%20the%20Texas%20Rangers%201952-03-30%20%2871%29%20Nighthawk.mp3"],
+      ["Texas_Rangers_1952_02_10_65_Hitchhiker.mp3","https://archive.org/download/OTRR_Tales_of_the_Texas_Rangers_Single/Tales%20of%20the%20Texas%20Rangers%201952-02-10%20%2865%29%20Hitchhiker.mp3"],
+      ["Texas_Rangers_1952_03_09_69_Dream_Farm.mp3","https://archive.org/download/OTRR_Tales_of_the_Texas_Rangers_Single/Tales%20of%20the%20Texas%20Rangers%201952-03-09%20%2869%29%20Dream%20Farm.mp3"],
+      ["Texas_Rangers_1952_04_06_72_Troop_Train.mp3","https://archive.org/download/OTRR_Tales_of_the_Texas_Rangers_Single/Tales%20of%20the%20Texas%20Rangers%201952-04-06%20%2872%29%20Troop%20Train.mp3"],
+      ["Texas_Rangers_1952_06_15_82_Travesty.mp3","https://archive.org/download/OTRR_Tales_of_the_Texas_Rangers_Single/Tales%20of%20the%20Texas%20Rangers%201952-06-15%20%2882%29%20Travesty.mp3"],
+      ["Texas_Rangers_1952_07_13_86_Finger_Man.mp3","https://archive.org/download/OTRR_Tales_of_the_Texas_Rangers_Single/Tales%20of%20the%20Texas%20Rangers%201952-07-13%20%2886%29%20Finger%20Man.mp3"],
+      ["Texas_Rangers_1952_07_27_88_Stick_Up.mp3","https://archive.org/download/OTRR_Tales_of_the_Texas_Rangers_Single/Tales%20of%20the%20Texas%20Rangers%201952-07-27%20%2888%29%20Stick-Up.mp3"],
+      ["Texas_Rangers_1952_07_06_85_The_Boomerang.mp3","https://archive.org/download/OTRR_Tales_of_the_Texas_Rangers_Single/Tales%20of%20the%20Texas%20Rangers%201952-07-06%20%2885%29%20The%20Boomerang.mp3"],
+      ["Tales of the Texas Rangers 1951-10-14 (48) Play for Keeps.mp3","https://archive.org/download/OTRR_Tales_of_the_Texas_Rangers_Single/Tales%20of%20the%20Texas%20Rangers%201951-10-14%20%2848%29%20Play%20for%20Keeps.mp3"],
+      ["Tales of the Texas Rangers 1951-10-28 (50) The White Elephant.mp3","https://archive.org/download/OTRR_Tales_of_the_Texas_Rangers_Single/Tales%20of%20the%20Texas%20Rangers%201951-10-28%20%2850%29%20The%20White%20Elephant.mp3"],
+      ["Tales of the Texas Rangers 1951-11-11 (52) Open and Shut.mp3","https://archive.org/download/OTRR_Tales_of_the_Texas_Rangers_Single/Tales%20of%20the%20Texas%20Rangers%201951-11-11%20%2852%29%20Open%20and%20Shut.mp3"],
+      ["Tales of the Texas Rangers 1951-12-02 (55) The Dead Give-Away.mp3","https://archive.org/download/OTRR_Tales_of_the_Texas_Rangers_Single/Tales%20of%20the%20Texas%20Rangers%201951-12-02%20%2855%29%20The%20Dead%20Give-Away.mp3"]
+    ]);
+
+    const episodes = files.map((file) => {
+      let title;
+      if (file.startsWith("Tales Of")) title = file.replace(/^Tales Of The Texas Rangers \d{4}-\d{2}-\d{2} /, "").replace(/\.mp3$/i, "");
+      else if (file.startsWith("Tales of")) title = file.replace(/^Tales of the Texas Rangers \d{4}-\d{2}-\d{2} /, "").replace(/\.mp3$/i, "");
+      else title = file.replace(/^Texas_Rangers_\d{4}_\d{2}_\d{2}_/, "").replace(/\.mp3$/i, "").replaceAll("_", " ");
+      return { title, url: alternateUrls.get(file) || base + encodeURIComponent(file) };
+    });
     const audio = document.querySelector("#audio");
     const nowPlaying = document.querySelector("#nowPlaying");
     const list = document.querySelector("#episodeList");

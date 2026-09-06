@@ -14,6 +14,10 @@
     #nowPlaying { min-height: 1.5em; font-weight: 700; }
     audio { width: 100%; margin: 12px 0; }
     .controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .diagnostics { margin-top: 12px; border-top: 1px solid #58462e; padding-top: 10px; }
+    .diagnostics summary { cursor: pointer; color: #d9c4a4; }
+    #diagnosticStatus { margin: 8px 0; color: #f0d49f; }
+    #diagnosticLog { max-height: 150px; overflow: auto; margin: 8px 0 0; padding: 8px; background: #17120d; color: #d8c9b5; white-space: pre-wrap; font: 12px/1.4 ui-monospace, monospace; user-select: text; }
     button { border: 1px solid #8a6b42; background: #4a3823; color: #fff5e5; border-radius: 8px; padding: 9px 13px; cursor: pointer; }
     button:hover { background: #674c2c; }
     label { margin-left: auto; }
@@ -37,6 +41,15 @@
         <label><input id="shuffle" type="checkbox"> Shuffle</label>
         <label><input id="autoNext" type="checkbox" checked> Play next automatically</label>
       </div>
+      <details class="diagnostics" open>
+        <summary>Playback diagnostics</summary>
+        <div id="diagnosticStatus" role="status">Ready. Playback events will appear here.</div>
+        <div class="controls">
+          <button id="retry" type="button">Retry from stopped position</button>
+          <button id="copyDiagnostics" type="button">Copy diagnostics</button>
+        </div>
+        <pre id="diagnosticLog" aria-label="Playback diagnostic log"></pre>
+      </details>
     </section>
 
     <ol id="episodeList"></ol>
@@ -180,7 +193,92 @@
     const list = document.querySelector("#episodeList");
     const shuffle = document.querySelector("#shuffle");
     const autoNext = document.querySelector("#autoNext");
+    const diagnosticStatus = document.querySelector("#diagnosticStatus");
+    const diagnosticLog = document.querySelector("#diagnosticLog");
+    const retryButton = document.querySelector("#retry");
     let currentIndex = -1;
+    let recoveryTimer;
+    let stablePlaybackTimer;
+    let retryAttempts = 0;
+
+    const networkStates = ["empty", "idle", "loading", "no-source"];
+    const readyStates = ["nothing", "metadata", "current-data", "future-data", "enough-data"];
+
+    function formatTime(seconds) {
+      if (!Number.isFinite(seconds)) return "unknown";
+      const minutes = Math.floor(seconds / 60);
+      return `${minutes}:${String(Math.floor(seconds % 60)).padStart(2, "0")}`;
+    }
+
+    function mediaDetails() {
+      const buffered = [];
+      for (let i = 0; i < audio.buffered.length; i += 1) {
+        buffered.push(`${formatTime(audio.buffered.start(i))}-${formatTime(audio.buffered.end(i))}`);
+      }
+      return `position=${formatTime(audio.currentTime)}, duration=${formatTime(audio.duration)}, buffered=${buffered.join(",") || "none"}, network=${networkStates[audio.networkState]}, ready=${readyStates[audio.readyState]}, online=${navigator.onLine}`;
+    }
+
+    function recordDiagnostic(eventName, message = "") {
+      const timestamp = new Date().toLocaleString();
+      const line = `[${timestamp}] ${eventName}${message ? `: ${message}` : ""} | ${mediaDetails()}`;
+      const lines = diagnosticLog.textContent ? diagnosticLog.textContent.split("\n") : [];
+      lines.push(line);
+      diagnosticLog.textContent = lines.slice(-80).join("\n");
+      diagnosticLog.scrollTop = diagnosticLog.scrollHeight;
+      diagnosticStatus.textContent = `${eventName}${message ? `: ${message}` : ""}`;
+    }
+
+    function clearRecoveryTimers() {
+      clearTimeout(recoveryTimer);
+      clearTimeout(stablePlaybackTimer);
+    }
+
+    function describeMediaError() {
+      if (!audio.error) return "Unknown media error";
+      const names = {
+        1: "Playback was aborted",
+        2: "Network error while loading audio",
+        3: "Audio decoding failed",
+        4: "Audio source or format is unsupported"
+      };
+      return `${names[audio.error.code] || "Unknown media error"} (code ${audio.error.code}${audio.error.message ? `, ${audio.error.message}` : ""})`;
+    }
+
+    function retryPlayback(reason, manual = false) {
+      if (currentIndex < 0) {
+        recordDiagnostic("retry unavailable", "Select an episode first");
+        return;
+      }
+      if (manual) retryAttempts = 0;
+      if (retryAttempts >= 3) {
+        recordDiagnostic("automatic recovery stopped", "Three retries failed; use the Retry button");
+        return;
+      }
+
+      clearRecoveryTimers();
+      const resumePosition = Math.max(0, audio.currentTime - 2);
+      const episode = episodes[currentIndex];
+      retryAttempts += 1;
+      recordDiagnostic("retry", `${reason}; attempt ${retryAttempts} from ${formatTime(resumePosition)}`);
+      audio.src = episode.url;
+      audio.addEventListener("loadedmetadata", () => {
+        if (resumePosition < audio.duration) audio.currentTime = resumePosition;
+        audio.play().catch((error) => {
+          recordDiagnostic("retry blocked", `${error.name}: ${error.message}`);
+        });
+      }, { once: true });
+      audio.load();
+    }
+
+    function scheduleStallRecovery(eventName) {
+      clearTimeout(recoveryTimer);
+      const stalledAt = audio.currentTime;
+      recoveryTimer = setTimeout(() => {
+        if (!audio.paused && !audio.ended && audio.currentTime <= stalledAt + 0.5) {
+          retryPlayback(`${eventName} lasted 20 seconds`);
+        }
+      }, 20000);
+    }
 
     function getNextIndex() {
       if (!shuffle.checked || episodes.length < 2) return currentIndex < 0 ? 0 : currentIndex + 1;
@@ -191,13 +289,18 @@
     }
 
     function loadEpisode(index, play = true) {
+      clearRecoveryTimers();
+      retryAttempts = 0;
       currentIndex = (index + episodes.length) % episodes.length;
       const episode = episodes[currentIndex];
       audio.src = episode.url;
       nowPlaying.textContent = `${currentIndex + 1} of ${episodes.length}: ${episode.title}`;
       document.querySelectorAll(".episode").forEach((button, i) => button.classList.toggle("active", i === currentIndex));
       document.querySelector(".episode.active")?.scrollIntoView({ block: "nearest" });
-      if (play) audio.play().catch(() => {});
+      recordDiagnostic("episode selected", `${currentIndex + 1} of ${episodes.length}: ${episode.title}`);
+      if (play) audio.play().catch((error) => {
+        recordDiagnostic("play blocked", `${error.name}: ${error.message}`);
+      });
     }
 
     episodes.forEach((episode, index) => {
@@ -213,7 +316,43 @@
 
     document.querySelector("#previous").addEventListener("click", () => loadEpisode(currentIndex <= 0 ? episodes.length - 1 : currentIndex - 1));
     document.querySelector("#next").addEventListener("click", () => loadEpisode(getNextIndex()));
+    retryButton.addEventListener("click", () => retryPlayback("manual retry", true));
+    document.querySelector("#copyDiagnostics").addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(diagnosticLog.textContent);
+        diagnosticStatus.textContent = "Diagnostics copied to the clipboard";
+      } catch (error) {
+        recordDiagnostic("copy failed", `${error.name}: ${error.message}`);
+      }
+    });
+
+    ["loadstart", "loadedmetadata", "canplay", "pause", "suspend", "abort", "emptied"].forEach((eventName) => {
+      audio.addEventListener(eventName, () => recordDiagnostic(eventName));
+    });
+    ["waiting", "stalled"].forEach((eventName) => {
+      audio.addEventListener(eventName, () => {
+        recordDiagnostic(eventName, "Will retry if playback makes no progress for 20 seconds");
+        scheduleStallRecovery(eventName);
+      });
+    });
+    audio.addEventListener("playing", () => {
+      clearTimeout(recoveryTimer);
+      clearTimeout(stablePlaybackTimer);
+      recordDiagnostic("playing");
+      stablePlaybackTimer = setTimeout(() => {
+        retryAttempts = 0;
+        recordDiagnostic("stable playback", "Retry counter reset after 60 seconds");
+      }, 60000);
+    });
+    audio.addEventListener("error", () => {
+      recordDiagnostic("error", describeMediaError());
+      clearTimeout(recoveryTimer);
+      recoveryTimer = setTimeout(() => retryPlayback(describeMediaError()), 3000);
+    });
+    window.addEventListener("offline", () => recordDiagnostic("offline", "The network connection was lost"));
+    window.addEventListener("online", () => recordDiagnostic("online", "The network connection returned"));
     audio.addEventListener("ended", () => {
+      recordDiagnostic("ended");
       if (autoNext.checked) loadEpisode(getNextIndex());
     });
   </script>

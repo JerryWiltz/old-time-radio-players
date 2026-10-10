@@ -200,6 +200,7 @@
     let recoveryTimer;
     let stablePlaybackTimer;
     let retryAttempts = 0;
+    let retryLoadGeneration = 0;
 
     const networkStates = ["empty", "idle", "loading", "no-source"];
     const readyStates = ["nothing", "metadata", "current-data", "future-data", "enough-data"];
@@ -251,7 +252,13 @@
       }
       if (manual) retryAttempts = 0;
       if (retryAttempts >= 3) {
-        recordDiagnostic("automatic recovery stopped", "Three retries failed; use the Retry button");
+        const failedEpisode = episodes[currentIndex];
+        if (!autoNext.checked) {
+          recordDiagnostic("automatic recovery stopped", "Three retries failed; use the Retry button");
+          return;
+        }
+        recordDiagnostic("episode skipped", `${currentIndex + 1} of ${episodes.length}: ${failedEpisode.title}; three retries failed`);
+        recoveryTimer = setTimeout(() => loadEpisode(getNextIndex()), 1000);
         return;
       }
 
@@ -259,9 +266,14 @@
       const resumePosition = Math.max(0, audio.currentTime - 2);
       const episode = episodes[currentIndex];
       retryAttempts += 1;
-      recordDiagnostic("retry", `${reason}; attempt ${retryAttempts} from ${formatTime(resumePosition)}`);
-      audio.src = episode.url;
+      retryLoadGeneration += 1;
+      const thisLoadGeneration = retryLoadGeneration;
+      const retryUrl = new URL(episode.url);
+      retryUrl.searchParams.set("otr-retry", `${Date.now()}-${retryAttempts}`);
+      recordDiagnostic("retry", `${reason}; attempt ${retryAttempts} from ${formatTime(resumePosition)} with a fresh request`);
+      audio.src = retryUrl.href;
       audio.addEventListener("loadedmetadata", () => {
+        if (thisLoadGeneration !== retryLoadGeneration) return;
         if (resumePosition < audio.duration) audio.currentTime = resumePosition;
         audio.play().catch((error) => {
           recordDiagnostic("retry blocked", `${error.name}: ${error.message}`);
@@ -291,6 +303,7 @@
     function loadEpisode(index, play = true) {
       clearRecoveryTimers();
       retryAttempts = 0;
+      retryLoadGeneration += 1;
       currentIndex = (index + episodes.length) % episodes.length;
       const episode = episodes[currentIndex];
       audio.src = episode.url;
@@ -326,7 +339,7 @@
       }
     });
 
-    ["loadstart", "loadedmetadata", "canplay", "pause", "suspend", "abort", "emptied"].forEach((eventName) => {
+    ["loadstart", "loadedmetadata", "canplay", "pause", "abort", "emptied"].forEach((eventName) => {
       audio.addEventListener(eventName, () => recordDiagnostic(eventName));
     });
     ["waiting", "stalled"].forEach((eventName) => {

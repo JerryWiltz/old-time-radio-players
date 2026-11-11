@@ -302,6 +302,86 @@
     const shuffle = document.querySelector("#shuffle");
     const autoNext = document.querySelector("#autoNext");
     let currentIndex = -1;
+    let recoveryTimer;
+    let retryAttempts = 0;
+    let retryLoadGeneration = 0;
+    let retryPosition = null;
+    let playbackRequested = false;
+    let loadingSource = false;
+    let stableProgress = 0;
+    let lastProgressPosition = 0;
+
+    function resetStablePlayback() {
+      stableProgress = 0;
+      lastProgressPosition = audio.currentTime;
+    }
+
+    function startPlayback() {
+      const generation = retryLoadGeneration;
+      audio.play().catch(() => {
+        // Media errors have their own recovery path; a denied play request does not.
+        if (generation === retryLoadGeneration && !audio.error) {
+          playbackRequested = false;
+          clearTimeout(recoveryTimer);
+          resetStablePlayback();
+        }
+      });
+    }
+
+    function retryPlayback() {
+      clearTimeout(recoveryTimer);
+      if (currentIndex < 0 || !playbackRequested) return;
+      resetStablePlayback();
+      if (retryAttempts >= 3) {
+        playbackRequested = false;
+        loadingSource = false;
+        const generation = ++retryLoadGeneration;
+        if (autoNext.checked) {
+          recoveryTimer = setTimeout(() => {
+            if (generation === retryLoadGeneration && autoNext.checked && !playbackRequested) {
+              loadEpisode(getNextIndex());
+            }
+          }, 1000);
+        }
+        return;
+      }
+
+      // Keep the same target if a retry fails before it can resume playback.
+      if (retryPosition === null) retryPosition = Math.max(0, audio.currentTime - 2);
+      const resumePosition = retryPosition;
+      const episode = episodes[currentIndex];
+      retryAttempts += 1;
+      retryLoadGeneration += 1;
+      const thisLoadGeneration = retryLoadGeneration;
+      const retryUrl = new URL(episode.url);
+      retryUrl.searchParams.set("otr-retry", `${Date.now()}-${retryAttempts}`);
+      loadingSource = true;
+      audio.src = retryUrl.href;
+      audio.addEventListener("loadedmetadata", () => {
+        if (thisLoadGeneration !== retryLoadGeneration || !playbackRequested) return;
+        if (resumePosition < audio.duration) audio.currentTime = resumePosition;
+        resetStablePlayback();
+        startPlayback();
+      }, { once: true });
+      audio.load();
+      scheduleStallRecovery();
+    }
+
+    function scheduleStallRecovery() {
+      clearTimeout(recoveryTimer);
+      if (!playbackRequested) return;
+      const generation = retryLoadGeneration;
+      const stalledAt = audio.currentTime;
+      recoveryTimer = setTimeout(() => {
+        if (generation !== retryLoadGeneration || !playbackRequested || audio.ended) return;
+        // load() pauses the element while metadata is pending. That is still a retryable stall.
+        if (loadingSource || audio.currentTime <= stalledAt + 0.5) {
+          retryPlayback();
+        } else {
+          scheduleStallRecovery();
+        }
+      }, 20000);
+    }
 
     function getNextIndex() {
       if (!shuffle.checked || episodes.length < 2) return currentIndex < 0 ? 0 : currentIndex + 1;
@@ -312,13 +392,23 @@
     }
 
     function loadEpisode(index, play = true) {
+      clearTimeout(recoveryTimer);
+      retryAttempts = 0;
+      retryLoadGeneration += 1;
+      retryPosition = null;
+      playbackRequested = play;
+      loadingSource = true;
       currentIndex = (index + episodes.length) % episodes.length;
       const episode = episodes[currentIndex];
       audio.src = episode.url;
+      resetStablePlayback();
       nowPlaying.textContent = `${currentIndex + 1} of ${episodes.length}: ${episode.title}`;
       document.querySelectorAll(".episode").forEach((button, i) => button.classList.toggle("active", i === currentIndex));
       document.querySelector(".episode.active")?.scrollIntoView({ block: "nearest" });
-      if (play) audio.play().catch(() => {});
+      if (play) {
+        startPlayback();
+        scheduleStallRecovery();
+      }
     }
 
     episodes.forEach((episode, index) => {
@@ -334,7 +424,57 @@
 
     document.querySelector("#previous").addEventListener("click", () => loadEpisode(currentIndex <= 0 ? episodes.length - 1 : currentIndex - 1));
     document.querySelector("#next").addEventListener("click", () => loadEpisode(getNextIndex()));
+    audio.addEventListener("loadedmetadata", () => {
+      loadingSource = false;
+    });
+    audio.addEventListener("play", () => {
+      if (!playbackRequested && retryAttempts >= 3) retryAttempts = 0;
+      playbackRequested = true;
+      scheduleStallRecovery();
+    });
+    audio.addEventListener("pause", () => {
+      resetStablePlayback();
+      // Source changes and media failures can pause the element without user action.
+      if (loadingSource || audio.error) return;
+      playbackRequested = false;
+      clearTimeout(recoveryTimer);
+    });
+    ["waiting", "stalled"].forEach((eventName) => {
+      audio.addEventListener(eventName, () => {
+        resetStablePlayback();
+        scheduleStallRecovery();
+      });
+    });
+    audio.addEventListener("playing", () => {
+      resetStablePlayback();
+      scheduleStallRecovery();
+    });
+    audio.addEventListener("seeking", resetStablePlayback);
+    audio.addEventListener("seeked", resetStablePlayback);
+    audio.addEventListener("timeupdate", () => {
+      const progress = audio.currentTime - lastProgressPosition;
+      lastProgressPosition = audio.currentTime;
+      if (!playbackRequested || audio.paused || audio.ended || audio.seeking || loadingSource) {
+        stableProgress = 0;
+        return;
+      }
+      if (progress > 0) {
+        retryPosition = null;
+        stableProgress += progress;
+        if (stableProgress >= 60) retryAttempts = 0;
+      } else if (progress < 0) {
+        stableProgress = 0;
+      }
+    });
+    audio.addEventListener("error", () => {
+      resetStablePlayback();
+      clearTimeout(recoveryTimer);
+      if (playbackRequested) recoveryTimer = setTimeout(retryPlayback, 3000);
+    });
     audio.addEventListener("ended", () => {
+      playbackRequested = false;
+      clearTimeout(recoveryTimer);
+      resetStablePlayback();
       if (autoNext.checked) loadEpisode(getNextIndex());
     });
   </script>
